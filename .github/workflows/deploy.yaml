@@ -1,0 +1,51 @@
+name: Build and Deploy LinuCards
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build LinuCards
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: linucards-ui
+          path: build/
+
+  deploy:
+    name: Deploy LinuCards
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: linucards-ui
+
+      - name: Display Artifact's Content
+        run: ls -R
+
+      - name: Deploy Application
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          ARGS: "-rlgoDzvc -i --delete"
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          SOURCE: ./
+          TARGET: /var/www/html
